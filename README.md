@@ -1,70 +1,150 @@
-# Mob Inventory (Expo SDK 49)
+# &#128230; Mob Inventory
 
-App React Native/Expo (TypeScript) para controle de patrimonio e inventario, com navegacao, componentes reutilizaveis e persistencia local via SQLite + Secure Store.
+Mob Inventory e um aplicativo **React Native (Expo SDK 49)** para controle de patrimonio e inventario, com operacao offline em **SQLite**, autenticacao local e sincronizacao **Mestre <-> Coletor** via QR Code + PIN.
 
-## Requisitos
-- Node 18+ e npm.
-- Expo CLI opcional (`npm install -g expo-cli`).
+A solucao cobre cadastro de areas e itens, inventarios com leituras (L0/L1/L2), comparacao de divergencias, ajustes finais e exportacao de relatorios em PDF/XLSX.
 
-## Como rodar
-1. Instale dependencias:
+---
+
+## &#128736; Tecnologias Utilizadas
+
+<p align="center">
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg" alt="React" width="30" height="30"/>
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg" alt="TypeScript" width="30" height="30"/>
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/sqlite/sqlite-original.svg" alt="SQLite" width="30" height="30"/>
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/nodejs/nodejs-original.svg" alt="Node.js" width="30" height="30"/>
+</p>
+
+- **React Native + Expo** - base mobile e runtime do app
+- **TypeScript** - tipagem e manutencao do codigo
+- **SQLite (expo-sqlite)** - persistencia local com migracoes
+- **Secure Store + Crypto** - sessao e hash de credenciais
+- **React Navigation** - navegacao por stacks e tabs
+- **expo-print / xlsx / expo-sharing** - relatorios PDF/XLSX
+- **expo-camera / QR Code / TCP Socket** - pareamento e coleta
+
+---
+
+## &#128194; Estrutura do Projeto
+
+- `App.tsx` - bootstrap do app, inicializacao do banco e AuthProvider
+- `src/db/index.ts` - conexao SQLite, migracoes e transacoes
+- `src/navigation/` - AuthStack, AppTabs e telas Mestre/Coletor
+- `src/screens/` - telas de login, cadastro, patrimonio, inventario, backup e configuracoes
+- `src/repositories/` - acesso a dados SQL (users, areas, assets, inventories, sync)
+- `src/services/` - regras de negocio (auth, inventario, backup, exportacao, coletor)
+- `src/components/` - UI reutilizavel e layouts
+- `tests/` - testes unitarios (inventario, backup, regras)
+
+---
+
+## &#9989; Pre-requisitos
+
+- **Node.js 18+** e npm
+- **Expo CLI** (opcional): `npm install -g expo-cli`
+- Android Studio / Xcode para emuladores (opcional)
+
+---
+
+## &#9881; Configuracao
+
+1. Instale as dependencias:
 ```bash
 npm install
 ```
-2. Inicie o bundler:
+
+2. Inicie o projeto:
 ```bash
 npm start
 ```
-3. Targets rapidos:
-- Android: `npm run android`
-- iOS (macOS): `npm run ios`
-- Web: `npm run web`
 
-## Scripts uteis
-- `npm run lint` — ESLint + Prettier.
-- `npm run format` — Prettier no projeto todo.
+3. Alvos rapidos:
+   - Android: `npm run android`
+   - iOS (macOS): `npm run ios`
+   - Web: `npm run web`
 
-## Estrutura principal (src/)
-- `components/` – UI reutilizavel (ConfirmModal, AlertBanner/Toast, EmptyState, LoadingOverlay, Button, Input, Surface, Screen layout).
-- `navigation/` – React Navigation com AuthStack (Login, Cadastro, Recuperacao) e AppTabs (Dashboard, Areas, Patrimonio, Inventario, Backup/Restore, Configuracoes).
-- `screens/` – Telas do sistema.
-- `services/` – Autenticacao com SQLite + Secure Store, contexto de sessao.
-- `repositories/` – Acesso a dados (User, Area, AssetItem, Session).
-- `db/` – Conexao SQLite + migracoes versionadas (schema_version).
-- `utils/` – Helpers (hash com salt, delay).
-- `types/` – Tipos globais (sessao, modelos).
-- `theme/` – Paleta de cores e espacamentos compartilhados.
+---
 
-## Persistencia e autenticacao
-- Banco local com `expo-sqlite`, migracoes em `src/db` criando tabelas `users`, `areas`, `asset_items` e `schema_version`.
-- **Primeiro Acesso**: Nao ha usuario padrao. O app detecta a ausencia de usuarios e direciona para a tela de cadastro do administrador.
-- **Recuperacao de Senha**: Via pergunta de seguranca definida no cadastro.
-- Hash de senha com salt via `expo-crypto` (SHA-256 + salt randomico); sessao salva no `expo-secure-store` com `userId`, `username`, `timestamp`.
-- Login real valida usuario/senha no SQLite; erros retornam Toast (AlertBanner).
+## &#129514; Scripts uteis
 
-## Patrimonio
-- Lista paginada (20), filtros por area, busca por nome/numero, ordenacao por `updated_at`.
-- Formulario com validacoes (area obrigatoria, quantidade/valor >= 0) e opcao de gerar numero automaticamente (`PAT-000001` sequencial, unica).
-- Detalhe com botoes editar/excluir (ConfirmModal) e atualizacao das listas apos operacoes.
-- Exportacao de relatorios: PDF (expo-print) e XLSX (xlsx + expo-file-system + expo-sharing) respeitando filtros e exibindo totais.
+- `npm run lint` - ESLint
+- `npm run format` - Prettier
+- `npm test` - testes unitarios com ts-node
 
-## Inventario
-- Tabelas: `inventories`, `inventory_snapshot_items` (leitura 0), `inventory_read_items` (leituras).
-- Criar inventario define escopo (todas as areas ou uma area) e gera Leitura 0 com snapshot do patrimonio.
-- Lista paginada com status (aberto/finalizado) e acoes de abrir/finalizar.
-- Tela de leitura permite buscar patrimonio (autocomplete) e registrar itens encontrados ou novos observados (sem numero), com validacao de duplicidade.
-- Comparacao L1 x L0 gera divergencias persistidas (`inventory_diff`): OK, Divergente, Ausente, Novo. Tela com filtros/paginacao e exportacao PDF/XLSX.
-- Leitura 2: recontagem apenas de divergentes. Resolucao permite escolher L1/L2/ignorar e opcional nota, aplica ajuste transacional (logs em `inventory_adjustment_log`) e finaliza inventario; relatorio final PDF/XLSX.
+---
 
-## Backup/Restore
-- Exportar backup gera arquivo `.json` com `schema_version`, usuarios (hash+salt, sem senha em texto), areas, patrimonios, sequencias e inventarios (snapshot + leituras); checksum SHA-256 garante integridade. Usa expo-document-picker/expo-sharing.
-- Importar backup valida estrutura/versao, mostra ConfirmModal e restaura em transacao SQLite (limpa e recria tabelas, atualiza sequences). Após restaurar, navega para o Dashboard.
+## &#128272; Autenticacao e Sessao
 
-## Configuracoes e testes
-- Tela Configuracoes: itens por pagina, regra para ausente (zerar/manter), permitir criar novos no ajuste, formato do numero de patrimonio (`PAT-{seq}`).
-- Testes unitarios leves (ts-node) para gerador de patrimonio e regras de comparacao/ajuste: `npm test`.
+- Primeiro acesso exige criar o usuario administrador.
+- Senhas e respostas de seguranca usam **SHA-256 + salt**.
+- Sessao persistida no **Secure Store** (fallback em memoria).
 
-## Observacoes
-- O campo `asset_number` (numero de patrimonio) e obrigatorio; `unit_value` e opcional.
-- Repositorios expostos: `userRepository`, `areaRepository`, `assetRepository`, `sessionRepository`.
-- Mantenha a sessao segura: deslogue com o botao em Configuracoes limpa o Secure Store.
+---
+
+## &#128230; Patrimonio
+
+- Cadastro com area obrigatoria, quantidade e valor unitario opcionais.
+- Numero de patrimonio manual ou **auto-gerado** (`PAT-000001`) com formato configuravel.
+- Listagem com filtros por nome, numero e area, paginacao e ordenacao por atualizacao.
+- Exportacao de relatorio de patrimonio em PDF/XLSX com totais.
+
+---
+
+## &#128203; Inventario
+
+- Criacao por **escopo total** ou **por area**.
+- **L0 (snapshot)** registra o patrimonio existente no momento da abertura.
+- **L1 (leitura)** permite registrar itens encontrados e itens novos sem numero.
+- Comparacao gera status **OK**, **Divergente**, **Ausente** e **Novo**.
+- **L2 (recontagem)** e resolucao final aplicam ajustes transacionais com log.
+
+---
+
+## &#128202; Relatorios
+
+- Comparativo L0 x L1 (PDF/XLSX).
+- Relatorio final de ajuste (PDF/XLSX).
+- Patrimonio com totais por quantidade e valor.
+
+---
+
+## &#128257; Backup e Restore
+
+- Exporta JSON com `schema_version`, checksum e dados completos.
+- Importa e valida o arquivo antes de restaurar via transacao SQLite.
+
+---
+
+## &#128268; Modo Mestre e Coletor
+
+**Mestre**
+- Abre recepcao local via **TCP Socket** (porta 8080).
+- Exibe **QR Code** com IP/porta e **PIN** de pareamento.
+- Recebe lotes, lista e permite **aprovar** ou **rejeitar**.
+
+**Coletor**
+- Le o QR, salva IP/porta e PIN.
+- Sincroniza areas do mestre e registra itens via camera ou digitacao.
+- Envia lote para o mestre e registra logs locais.
+
+---
+
+## &#128451; Banco de Dados
+
+- Migracoes versionadas em `schema_version`.
+- Tabelas principais: `users`, `areas`, `asset_items`, `inventories`, `inventory_snapshot_items`, `inventory_read_items`, `inventory_diff`, `inventory_adjustment_log`.
+- Tabelas de sincronizacao: `collector_*`, `sync_*`, `asset_import_log`.
+
+---
+
+## &#128204; Observacoes
+
+- Regras de ajuste (ausentes, criacao de novos e formato do patrimonio) ficam em Configuracoes.
+- O modo Mestre/Coletor pressupoe dispositivos na **mesma rede local**.
+- O app e **offline-first**: toda a base roda localmente em SQLite.
+
+---
+
+## &#128196; Licenca
+
+Este projeto esta licenciado sob a [MIT License](LICENSE).
